@@ -226,9 +226,6 @@ function setupFilters() {
 }
 
 function hydrateLists() {
-  const emptyLists = Object.fromEntries(TIERS.map((tier) => [tier.id, []]));
-  emptyLists.pool = state.cards.map((card) => card.id);
-
   const saved = readSavedState();
   if (["manual", "index", "name", "rarity", "cost"].includes(saved?.poolSort)) {
     state.filters.sort = saved.poolSort;
@@ -236,8 +233,16 @@ function hydrateLists() {
   }
   state.tierNotes = normalizeTierNotes(saved?.tierNotes);
   if (!saved) {
-    state.lists = emptyLists;
-    state.tierNotes = normalizeTierNotes();
+    const defaults = window.BALATRO_DEFAULT_TIER_LIST;
+    if (!defaults?.tiers) {
+      throw new Error("기본 티어 데이터가 없습니다. data/default-tier-list.js 파일을 확인해 주세요.");
+    }
+    state.lists = normalizeImportedLists(defaults.tiers);
+    state.tierNotes = normalizeTierNotes(defaults.tier_notes);
+    if (["manual", "index", "name", "rarity", "cost"].includes(defaults.pool_sort)) {
+      state.filters.sort = defaults.pool_sort;
+      els.sortMode.value = defaults.pool_sort;
+    }
     persist();
     return;
   }
